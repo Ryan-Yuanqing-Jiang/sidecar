@@ -20,7 +20,14 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener(handleContextMenuClick);
+chrome.runtime.onMessage.addListener(handleMessage);
+chrome.alarms.onAlarm.addListener(handleAlarm);
+
+export async function handleContextMenuClick(
+  info: chrome.contextMenus.OnClickData,
+  tab?: chrome.tabs.Tab
+) {
   if (info.menuItemId !== MENU_ID) {
     return;
   }
@@ -67,9 +74,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } catch (error) {
     await markFailed(jobId, String(error));
   }
-});
+}
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+export function handleMessage(
+  message: any,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: any) => void
+) {
   if (message?.type === 'RAW_RESPONSE') {
     handleRawResponse(message.payload)
       .then(() => sendResponse({ ok: true }))
@@ -82,9 +93,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   sendResponse({ ok: false, error: 'Unknown message type' });
   return false;
-});
+}
 
-chrome.alarms.onAlarm.addListener(async (alarm) => {
+export async function handleAlarm(alarm: chrome.alarms.Alarm) {
   if (!alarm.name.startsWith(TIMEOUT_PREFIX)) {
     return;
   }
@@ -98,7 +109,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (node.status === 'waiting' || node.status === 'processing') {
     await db.nodes.update(jobId, { status: 'timeout' });
   }
-});
+}
 
 async function handleRawResponse(payload: { jobId: string; raw: string }) {
   const parsed = parseResponse(payload.raw);

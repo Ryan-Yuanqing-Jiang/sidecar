@@ -12,5 +12,13 @@
 - **Race Condition Fix:** Moved status update to `processing` *before* awaiting the long-running content script operation to prevent overwriting the final `ok` status.
 - **Error Handling:** Added checks for explicit error responses from the content script injection call to ensure failures are caught and logged to the DB.
 
+## Testing (Automated)
+- Added `vitest` and `fake-indexeddb` for unit testing.
+- Implemented comprehensive unit tests for:
+  - **Prompt Builder:** Verifies injection of `SIDECAR_JOB_ID` and schema.
+  - **Parser:** Validates JSON parsing, markdown stripping, and error handling.
+  - **Database:** Checks CRUD operations with `fake-indexeddb`.
+  - **Background Logic:** Tests job orchestration, context menu handling, and timeouts using a Chrome API mock.
+
 ## Why
 - Deliver the M1 "Instant Explainer" walking skeleton per PRD: local-first storage, job-based flow, prompt injection, extraction, parsing, and side panel rendering with explicit failure states.
