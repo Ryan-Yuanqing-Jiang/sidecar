@@ -1,4 +1,5 @@
 import type { PlatformAdapter } from '../types';
+import { observeForResponse } from '../observer';
 
 export const chatgptAdapter: PlatformAdapter = {
   detect() {
@@ -20,6 +21,6 @@ export const chatgptAdapter: PlatformAdapter = {
     form.dispatchEvent(new Event('submit', { bubbles: true }));
   },
   async observeCompletion() {
-    return { raw: '' };
+    return observeForResponse('[data-message-author-role="assistant"]');
   },
 };

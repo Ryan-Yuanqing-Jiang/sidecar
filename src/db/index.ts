@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { ChatSession, KnowledgeNode } from '../types';
+import { DB_VERSION } from './migrations';
 
 export class KnowledgeSidecarDB extends Dexie {
   sessions!: Table<ChatSession, string>;
@@ -8,9 +9,9 @@ export class KnowledgeSidecarDB extends Dexie {
   constructor() {
     super('knowledge-sidecar');
 
-    this.version(1).stores({
+    this.version(DB_VERSION).stores({
       sessions: 'id, platform, lastActive',
-      nodes: 'id, sessionId, parentId, topic, status, depth, createdAt',
+      nodes: 'id, jobId, topic, status, createdAt',
     });
   }
 }

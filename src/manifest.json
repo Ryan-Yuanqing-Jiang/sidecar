@@ -6,7 +6,7 @@
   "action": {
     "default_title": "Knowledge Sidecar"
   },
-  "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
+  "permissions": ["storage", "sidePanel", "activeTab", "scripting", "contextMenus", "alarms"],
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://gemini.google.com/*"

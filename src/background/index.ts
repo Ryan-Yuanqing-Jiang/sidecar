@@ -1,28 +1,124 @@
-import { handleExpandConcept } from './jobs';
+import { db } from '../db';
+import type { KnowledgeNode } from '../types';
+import { parseResponse } from './parser';
+
+const MENU_ID = 'knowledge-sidecar-explain';
+const PROMPT_VERSION = 1;
+const TIMEOUT_PREFIX = 'ks-timeout-';
 
 chrome.runtime.onInstalled.addListener(() => {
   if (chrome.sidePanel?.setPanelBehavior) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
   }
+
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: MENU_ID,
+      title: 'Explain with Knowledge-Sidecar',
+      contexts: ['selection'],
+    });
+  });
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== MENU_ID) {
+    return;
+  }
+
+  const selection = info.selectionText?.trim();
+  if (!selection) {
+    return;
+  }
+
+  const jobId = crypto.randomUUID();
+  const createdAt = Date.now();
+  const node: KnowledgeNode = {
+    id: jobId,
+    jobId,
+    topic: selection,
+    status: 'waiting',
+    promptVersion: PROMPT_VERSION,
+    createdAt,
+  };
+
+  await db.nodes.put(node);
+  scheduleTimeout(jobId);
+
+  if (!tab?.id) {
+    await markFailed(jobId, 'No active tab to send the job.');
+    return;
+  }
+
+  try {
+    await db.nodes.update(jobId, { status: 'processing' });
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: 'RUN_EXPAND_CONCEPT',
+      payload: {
+        jobId,
+        concept: selection,
+        promptVersion: PROMPT_VERSION,
+      },
+    });
+
+    if (response && !response.ok) {
+      throw new Error(response.error || 'Content script reported failure');
+    }
+  } catch (error) {
+    await markFailed(jobId, String(error));
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === 'EXPAND_CONCEPT') {
-    handleExpandConcept(message.payload)
+  if (message?.type === 'RAW_RESPONSE') {
+    handleRawResponse(message.payload)
       .then(() => sendResponse({ ok: true }))
       .catch((error) => {
-        console.error('Job failed', error);
+        console.error('Raw response handling failed', error);
         sendResponse({ ok: false, error: String(error) });
       });
-    return true;
-  }
-
-  if (message?.type === 'RAW_RESPONSE') {
-    console.log('Raw response received', message.payload);
-    sendResponse({ ok: true });
     return true;
   }
 
   sendResponse({ ok: false, error: 'Unknown message type' });
   return false;
 });
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (!alarm.name.startsWith(TIMEOUT_PREFIX)) {
+    return;
+  }
+
+  const jobId = alarm.name.replace(TIMEOUT_PREFIX, '');
+  const node = await db.nodes.get(jobId);
+  if (!node) {
+    return;
+  }
+
+  if (node.status === 'waiting' || node.status === 'processing') {
+    await db.nodes.update(jobId, { status: 'timeout' });
+  }
+});
+
+async function handleRawResponse(payload: { jobId: string; raw: string }) {
+  const parsed = parseResponse(payload.raw);
+  await db.nodes.update(payload.jobId, {
+    status: parsed.status,
+    content: parsed.content,
+    raw: parsed.raw,
+  });
+  await clearTimeout(payload.jobId);
+}
+
+function scheduleTimeout(jobId: string) {
+  chrome.alarms.create(`${TIMEOUT_PREFIX}${jobId}`, { delayInMinutes: 0.5 });
+}
+
+async function clearTimeout(jobId: string) {
+  await chrome.alarms.clear(`${TIMEOUT_PREFIX}${jobId}`);
+}
+
+async function markFailed(jobId: string, raw: string) {
+  await db.nodes.update(jobId, { status: 'parse_failed', raw });
+  await clearTimeout(jobId);
+}

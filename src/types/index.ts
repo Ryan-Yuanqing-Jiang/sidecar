@@ -1,9 +1,14 @@
-export type NodeStatus = 'waiting' | 'ok' | 'partial' | 'parse_failed' | 'timeout';
+export type NodeStatus =
+  | 'waiting'
+  | 'processing'
+  | 'ok'
+  | 'partial'
+  | 'parse_failed'
+  | 'timeout';
 
 export interface KnowledgeNode {
   id: string;
-  parentId: string | null;
-  sessionId: string;
+  jobId: string;
   topic: string;
   content?: {
     simple: string;
@@ -13,7 +18,6 @@ export interface KnowledgeNode {
   status: NodeStatus;
   promptVersion: number;
   createdAt: number;
-  depth: number;
 }
 
 export interface ChatSession {

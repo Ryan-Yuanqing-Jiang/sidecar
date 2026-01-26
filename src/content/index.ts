@@ -35,7 +35,12 @@ async function handleExpandConcept(payload: ExpandConceptRequest) {
   await activeAdapter.injectPrompt(prompt, payload.jobId);
   await activeAdapter.submit();
 
-  const result = await activeAdapter.observeCompletion(payload.jobId);
+  let result;
+  try {
+    result = await activeAdapter.observeCompletion(payload.jobId);
+  } catch (error) {
+    result = { raw: String(error) };
+  }
   await chrome.runtime.sendMessage({
     type: 'RAW_RESPONSE',
     payload: {

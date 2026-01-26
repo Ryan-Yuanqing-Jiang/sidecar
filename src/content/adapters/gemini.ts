@@ -1,4 +1,5 @@
 import type { PlatformAdapter } from '../types';
+import { observeForResponse } from '../observer';
 
 export const geminiAdapter: PlatformAdapter = {
   detect() {
@@ -20,6 +21,6 @@ export const geminiAdapter: PlatformAdapter = {
     button.click();
   },
   async observeCompletion() {
-    return { raw: '' };
+    return observeForResponse('model-response');
   },
 };

@@ -7,7 +7,7 @@ export interface ParsedResponse {
 }
 
 export function parseResponse(raw: string): ParsedResponse {
-  const trimmed = raw.trim();
+  const trimmed = stripCodeFences(raw.trim());
   const start = trimmed.indexOf('{');
   const end = trimmed.lastIndexOf('}');
 
@@ -34,4 +34,12 @@ export function parseResponse(raw: string): ParsedResponse {
   } catch (error) {
     return { status: 'parse_failed', raw };
   }
+}
+
+function stripCodeFences(text: string) {
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch) {
+    return fenceMatch[1].trim();
+  }
+  return text;
 }
