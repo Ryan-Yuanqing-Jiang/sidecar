@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Knowledge Sidecar",
+  "version": "0.1.0",
+  "description": "Spatial learning layer for LLM chats.",
+  "action": {
+    "default_title": "Knowledge Sidecar"
+  },
+  "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_idle"
+    }
+  ]
+}
