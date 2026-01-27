@@ -6,21 +6,33 @@ export const chatgptAdapter: PlatformAdapter = {
     return window.location.hostname === 'chatgpt.com';
   },
   async injectPrompt(prompt: string, _jobId: string) {
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement | null;
-    if (!textarea) {
-      throw new Error('ChatGPT input not found');
+    const composer = document.querySelector('#prompt-textarea') as HTMLDivElement | null;
+    if (!composer) {
+      throw new Error('ChatGPT composer not found');
     }
-    textarea.value = prompt;
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    composer.innerHTML = `<p>${escapeHtml(prompt)}</p>`;
+    composer.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 500));
   },
   async submit() {
-    const form = document.querySelector('form') as HTMLFormElement | null;
-    if (!form) {
-      throw new Error('ChatGPT form not found');
+    const submitButton = document.querySelector('#composer-submit-button') as
+      | HTMLButtonElement
+      | null;
+    if (!submitButton) {
+      throw new Error('ChatGPT submit button not found');
     }
-    form.dispatchEvent(new Event('submit', { bubbles: true }));
+    submitButton.click();
   },
   async observeCompletion() {
     return observeForResponse('[data-message-author-role="assistant"]');
   },
 };
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}

@@ -39,17 +39,35 @@ export default function App() {
     return db.nodes.orderBy('createdAt').reverse().toArray();
   }, []);
 
+  async function handleClearAll() {
+    await db.nodes.clear();
+  }
+
   return (
     <div className="min-h-screen bg-ink-900 text-white">
       <div className="px-6 pb-10 pt-8">
         <header className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-accent-400/70">Knowledge Sidecar</p>
-          <h1 className="font-display text-2xl font-semibold text-white">
-            Instant Explainer
-          </h1>
-          <p className="text-sm text-ink-600">
-            The side panel renders solely from IndexedDB. Trigger an explanation from the page to begin.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-accent-400/70">
+                Knowledge Sidecar
+              </p>
+              <h1 className="font-display text-2xl font-semibold text-white">
+                Instant Explainer
+              </h1>
+              <p className="text-sm text-ink-600">
+                The side panel renders solely from IndexedDB. Trigger an explanation from the page to
+                begin.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="rounded-full border border-white/15 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/80 hover:border-white/40 hover:text-white"
+            >
+              Clear All
+            </button>
+          </div>
         </header>
 
         <section className="mt-6 grid gap-4">

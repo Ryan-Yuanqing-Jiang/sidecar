@@ -7,6 +7,7 @@ export async function observeForResponse(
   assistantSelector: string,
   timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<RawResponse> {
+  console.log('Knowledge Sidecar: observing selector', assistantSelector);
   const existingCount = document.querySelectorAll(assistantSelector).length;
   const messageEl = await waitForNewMessage(assistantSelector, existingCount, timeoutMs);
   const raw = await waitForStableText(messageEl, timeoutMs);
@@ -29,6 +30,7 @@ function waitForNewMessage(
       if (messages.length > initialCount) {
         window.clearTimeout(timeoutId);
         observer.disconnect();
+        console.log('Knowledge Sidecar: assistant message detected');
         resolve(messages[messages.length - 1]);
       }
     });
@@ -58,6 +60,7 @@ function waitForStableText(element: Element, timeoutMs: number): Promise<string>
         window.clearTimeout(timeoutId);
         window.clearInterval(intervalId);
         observer.disconnect();
+        console.log('Knowledge Sidecar: response stabilized');
         resolve(currentText.trim());
       }
     }, 250);

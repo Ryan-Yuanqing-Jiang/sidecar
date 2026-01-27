@@ -39,6 +39,7 @@ export async function handleContextMenuClick(
 
   const jobId = crypto.randomUUID();
   const createdAt = Date.now();
+  console.log('Knowledge Sidecar: creating job', { jobId, selection });
   const node: KnowledgeNode = {
     id: jobId,
     jobId,
@@ -57,6 +58,7 @@ export async function handleContextMenuClick(
   }
 
   try {
+    console.log('Knowledge Sidecar: dispatching job to tab', tab.id);
     await db.nodes.update(jobId, { status: 'processing' });
 
     const response = await chrome.tabs.sendMessage(tab.id, {
@@ -71,6 +73,7 @@ export async function handleContextMenuClick(
     if (response && !response.ok) {
       throw new Error(response.error || 'Content script reported failure');
     }
+    console.log('Knowledge Sidecar: job sent successfully', jobId);
   } catch (error) {
     await markFailed(jobId, String(error));
   }
@@ -82,6 +85,7 @@ export function handleMessage(
   sendResponse: (response?: any) => void
 ) {
   if (message?.type === 'RAW_RESPONSE') {
+    console.log('Knowledge Sidecar: raw response received', message.payload?.jobId);
     handleRawResponse(message.payload)
       .then(() => sendResponse({ ok: true }))
       .catch((error) => {
@@ -113,6 +117,7 @@ export async function handleAlarm(alarm: chrome.alarms.Alarm) {
 
 async function handleRawResponse(payload: { jobId: string; raw: string }) {
   const parsed = parseResponse(payload.raw);
+  console.log('Knowledge Sidecar: parsed response', payload.jobId, parsed.status);
   await db.nodes.update(payload.jobId, {
     status: parsed.status,
     content: parsed.content,
@@ -130,6 +135,7 @@ async function clearTimeout(jobId: string) {
 }
 
 async function markFailed(jobId: string, raw: string) {
+  console.warn('Knowledge Sidecar: job failed', jobId, raw);
   await db.nodes.update(jobId, { status: 'parse_failed', raw });
   await clearTimeout(jobId);
 }
