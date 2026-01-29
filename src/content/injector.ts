@@ -9,8 +9,8 @@ export function buildPrompt(concept: string, jobId: string, promptVersion: numbe
     '{',
     '  "v": 1,',
     `  "concept": "${concept}",`,
-    '  "simple": "High-level explanation using analogy",',
-    '  "technical": "Detailed technical explanation with math/code"',
+    '  "simple": "High-level explanation using analogy. Keep it in 1-2 sentence.",',
+    '  "technical": "Detailed technical explanation with math/code. Keep it in 3-5 sentences.",',
     '}',
   ].join('\n');
 }
