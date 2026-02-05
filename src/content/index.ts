@@ -5,6 +5,7 @@ import type { ExpandConceptRequest } from '../types';
 
 console.log('Knowledge Sidecar: content script loaded', window.location.href);
 
+const SCROLL_LOCK_TIMEOUT = 2000;
 const adapters = [chatgptAdapter, geminiAdapter];
 const activeAdapter = adapters.find((adapter) => adapter.detect());
 
@@ -40,7 +41,18 @@ async function handleExpandConcept(payload: ExpandConceptRequest) {
   console.log('Knowledge Sidecar: injecting prompt');
   await activeAdapter.injectPrompt(prompt, payload.jobId);
   console.log('Knowledge Sidecar: submitting prompt');
-  await activeAdapter.submit();
+  const releaseScroll = lockScroll();
+  let releaseScheduled = false;
+  try {
+    await activeAdapter.submit();
+    releaseScheduled = true;
+    window.setTimeout(() => releaseScroll(), SCROLL_LOCK_TIMEOUT);
+  } catch (error) {
+    if (!releaseScheduled) {
+      releaseScroll();
+    }
+    throw error;
+  }
 
   let result;
   try {
@@ -58,4 +70,35 @@ async function handleExpandConcept(payload: ExpandConceptRequest) {
       raw: result.raw,
     },
   });
+}
+
+function lockScroll() {
+  const scrollY = window.scrollY;
+  const html = document.documentElement;
+  const body = document.body;
+  const prevHtmlOverflow = html.style.overflow;
+  const prevBodyOverflow = body.style.overflow;
+  const prevBodyPosition = body.style.position;
+  const prevBodyTop = body.style.top;
+  const prevBodyWidth = body.style.width;
+
+  html.style.overflow = 'hidden';
+  body.style.overflow = 'hidden';
+  body.style.position = 'fixed';
+  body.style.top = `-${scrollY}px`;
+  body.style.width = '100%';
+
+  let released = false;
+  return () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    html.style.overflow = prevHtmlOverflow;
+    body.style.overflow = prevBodyOverflow;
+    body.style.position = prevBodyPosition;
+    body.style.top = prevBodyTop;
+    body.style.width = prevBodyWidth;
+    window.scrollTo(0, scrollY);
+  };
 }
